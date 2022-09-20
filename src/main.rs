@@ -23,7 +23,7 @@ fn read_files(cli: &Cli, process_fn: fn (PathBuf, &Option<String>) -> ()) {
     }
 }
 
-fn process_path_simple(path: PathBuf, search_expression: &Option<String>) {
+fn process_path_simple(path: PathBuf, _: &Option<String>) {
     match path.to_str() {
         Some(s) => {
             println!("{}", s);
