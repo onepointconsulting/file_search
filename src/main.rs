@@ -1,7 +1,7 @@
 extern crate glob;
 
 use std::path::PathBuf;
-use crate::cli::Cli;
+use crate::cli::{Cli, Mode};
 use clap::Parser;
 use self::glob::glob;
 
@@ -51,13 +51,21 @@ fn process_path_with_expression(path: PathBuf, search_expression_option: &Option
 fn main() {
     let args = Cli::parse();
     let search_expression = &args.search_expression;
-    match search_expression {
-        Some(se) => {
-            read_files(&args, process_path_with_expression);
+    let mode = &args.mode;
+    match mode {
+        Mode::FileName=> {
+            println!("Mode is file-name");
+            match search_expression {
+                Some(se) => {
+                    read_files(&args, process_path_with_expression);
+                }
+                None => {
+                    read_files(&args, process_path_simple);
+                }
+            }
         }
-        None => {
-            read_files(&args, process_path_simple);
+        Mode::Zip=> {
+            println!("Mode is zip. Not implemented yet");
         }
     }
-
 }

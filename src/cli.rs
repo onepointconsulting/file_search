@@ -4,7 +4,7 @@ use std::fmt;
 
 #[derive(ArgEnum, Debug, Clone)]
 #[clap(rename_all = "kebab_case")]
-enum Mode {
+pub(crate) enum Mode {
     FileName,
     Zip
 }
