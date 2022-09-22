@@ -1,12 +1,11 @@
 use clap::{Parser, ArgEnum};
-use std::str::FromStr;
-use std::fmt;
 
 #[derive(ArgEnum, Debug, Clone)]
 #[clap(rename_all = "kebab_case")]
 pub(crate) enum Mode {
     FileName,
-    Zip
+    Zip,
+    LineSearch
 }
 
 /// Simple binary programme used to grep files by name, or for searching inside of compressed files.
