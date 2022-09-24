@@ -5,7 +5,8 @@ use clap::{Parser, ArgEnum};
 pub(crate) enum Mode {
     FileName,
     Zip,
-    LineSearch
+    LineSearch,
+    LineRegexSearch
 }
 
 /// Simple binary programme used to grep files by name, or for searching inside of compressed files.

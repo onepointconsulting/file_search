@@ -1,13 +1,18 @@
 extern crate glob;
 
-use std::{fs, io};
-use std::path::{Path, PathBuf};
-use crate::cli::{Cli, Mode};
-use clap::Parser;
-use self::glob::glob;
 use fs::File;
+use std::{fs};
+use std::path::{PathBuf};
 use std::process;
+
+use clap::Parser;
+use colored::Colorize;
+use fancy_regex::Regex;
+
+use crate::cli::{Cli, Mode};
 use crate::io_ops::read_lines;
+
+use self::glob::glob;
 
 mod cli;
 mod io_ops;
@@ -37,6 +42,21 @@ fn process_path_simple(path: PathBuf, _: &Option<String>) {
 
 fn find_simple(content: &str, search_filter: &String) -> bool {
     content.find(search_filter).is_some()
+}
+
+fn find_regex(content: &str, search_filter: &Regex) -> bool {
+    let result = search_filter.find(content);
+    if result.is_ok() {
+        let match_option = result.unwrap();
+        match match_option {
+            Some(m) => {
+                // println!("Start position: {}", m.start());
+                return true;
+            }
+            None => {}
+        }
+    }
+    return false;
 }
 
 fn process_path_with_expression(path: PathBuf, search_expression_option: &Option<String>) {
@@ -73,14 +93,29 @@ fn process_zip_with_expression(path: PathBuf, search_expression_option: &Option<
 }
 
 fn process_line_search(path: PathBuf, search_expression_option: &Option<String>) {
+    process_line_search_generic(path, search_expression_option, find_simple);
+}
+
+fn process_regex_search(path: PathBuf, search_expression_option: &Option<String>) {
+    match search_expression_option {
+        Some(search_expression) => {
+            let re = Regex::new(search_expression).expect("Invalid regex");
+            let regex_option = Some(re);
+            process_line_search_generic(path, &regex_option, find_regex);
+        }
+        None => {}
+    }
+}
+
+fn process_line_search_generic<T>(path: PathBuf, search_expression_option: &Option<T>, search_fn: fn(&str, &T) -> bool) {
     let main_file_path = &path.to_str().unwrap();
     let search_filter = search_expression_option.as_ref().unwrap();
     match read_lines(&path) {
         Ok(lines) => {
-            for line in lines {
+            for (linenumber, line) in lines.enumerate() {
                 if let Ok(s) = line {
-                    if find_simple(&s, search_filter) {
-                        println!("{} :: {}", main_file_path, s);
+                    if search_fn(&s, search_filter) {
+                        println!("{} :: {} :: {}", main_file_path, linenumber, s.trim());
                     }
                 }
             }
@@ -91,13 +126,18 @@ fn process_line_search(path: PathBuf, search_expression_option: &Option<String>)
     }
 }
 
+fn handle_missing_search_expression() {
+    eprintln!("Please enter the search expression with e.g: '--search-expression tb_'");
+    process::exit(0x0001);
+}
+
 fn main() {
     let args = Cli::parse();
     let search_expression = &args.search_expression;
     let mode = &args.mode;
+    println!("Mode is {}", format!("{:?}", mode).bold());
     match mode {
         Mode::FileName => {
-            println!("Mode is file-name");
             if search_expression.is_none() {
                 read_files(&args, process_path_simple);
             } else {
@@ -105,7 +145,6 @@ fn main() {
             }
         }
         Mode::Zip => {
-            println!("Mode is zip");
             if search_expression.is_none() {
                 eprintln!("The search expression is required when using Zip search.")
             } else {
@@ -113,12 +152,17 @@ fn main() {
             }
         }
         Mode::LineSearch => {
-            println!("Mode is line search");
             if search_expression.is_none() {
-                eprintln!("Please enter the search expression with e.g: '--search-expression tb_'");
-                process::exit(0x0001);
+                handle_missing_search_expression();
             } else {
                 read_files(&args, process_line_search);
+            }
+        }
+        Mode::LineRegexSearch => {
+            if search_expression.is_none() {
+                handle_missing_search_expression();
+            } else {
+                read_files(&args, process_regex_search);
             }
         }
     }
