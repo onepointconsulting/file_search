@@ -6,7 +6,8 @@ pub(crate) enum Mode {
     FileName,
     Zip,
     LineSearch,
-    LineRegexSearch
+    LineRegexSearch,
+    ZipRegex
 }
 
 /// Simple binary programme used to grep files by name, or for searching inside of compressed files.
@@ -16,7 +17,7 @@ pub(crate) struct Cli {
     #[clap(short, long)]
     pub(crate) glob_pattern: String,
 
-    /// The search expression, like 'foo'. Not a regular expression.
+    /// The search expression, like 'foo'. Not a regular expression unless you use "line-search-regex"
     #[clap(short, long)]
     pub(crate) search_expression: Option<String>,
 

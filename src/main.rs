@@ -49,7 +49,7 @@ fn find_regex(content: &str, search_filter: &Regex) -> bool {
     if result.is_ok() {
         let match_option = result.unwrap();
         match match_option {
-            Some(m) => {
+            Some(_) => {
                 // println!("Start position: {}", m.start());
                 return true;
             }
@@ -78,6 +78,21 @@ fn process_path_with_expression(path: PathBuf, search_expression_option: &Option
 }
 
 fn process_zip_with_expression(path: PathBuf, search_expression_option: &Option<String>) {
+    process_zip_with_expression_generic(path, search_expression_option, find_simple);
+}
+
+fn process_zip_with_regex(path: PathBuf, search_expression_option: &Option<String>) {
+    match search_expression_option {
+        Some(search_expression) => {
+            let re = Regex::new(search_expression).expect("Invalid regex");
+            process_zip_with_expression_generic(path, &Some(re), find_regex);
+        }
+        None => {}
+    }
+}
+
+fn process_zip_with_expression_generic<T>(path: PathBuf, search_expression_option: &Option<T>,
+                                       find_func: fn(content: &str, search_filter: &T) -> bool) {
     let main_file_path = &path.to_str().unwrap();
     let zip_file = File::open(&path).unwrap();
     let mut archive = zip::ZipArchive::new(&zip_file).unwrap();
@@ -86,7 +101,7 @@ fn process_zip_with_expression(path: PathBuf, search_expression_option: &Option<
     for i in 0..*len {
         let file = archive.by_index(i).unwrap();
         let file_name = file.name();
-        if find_simple(file_name, search_filter) {
+        if find_func(file_name, search_filter) {
             println!("{} :: {}", main_file_path, file_name);
         }
     }
@@ -100,8 +115,7 @@ fn process_regex_search(path: PathBuf, search_expression_option: &Option<String>
     match search_expression_option {
         Some(search_expression) => {
             let re = Regex::new(search_expression).expect("Invalid regex");
-            let regex_option = Some(re);
-            process_line_search_generic(path, &regex_option, find_regex);
+            process_line_search_generic(path, &Some(re), find_regex);
         }
         None => {}
     }
@@ -131,6 +145,15 @@ fn handle_missing_search_expression() {
     process::exit(0x0001);
 }
 
+fn execute_on_expression(args: &Cli, missing_func: fn() -> (), process_fn: fn(PathBuf, &Option<String>)) {
+    let search_expression = &args.search_expression;
+    if search_expression.is_none() {
+        missing_func()
+    } else {
+        read_files(&args, process_fn);
+    }
+}
+
 fn main() {
     let args = Cli::parse();
     let search_expression = &args.search_expression;
@@ -138,32 +161,29 @@ fn main() {
     println!("Mode is {}", format!("{:?}", mode).bold());
     match mode {
         Mode::FileName => {
-            if search_expression.is_none() {
-                read_files(&args, process_path_simple);
-            } else {
-                read_files(&args, process_path_with_expression);
-            }
+            read_files(&args,
+                       if search_expression.is_none() { process_path_simple }
+                       else { process_path_with_expression });
         }
         Mode::Zip => {
-            if search_expression.is_none() {
-                eprintln!("The search expression is required when using Zip search.")
-            } else {
-                read_files(&args, process_zip_with_expression);
-            }
+            execute_on_expression(&args,
+                                  handle_missing_search_expression,
+                                  process_zip_with_expression);
         }
         Mode::LineSearch => {
-            if search_expression.is_none() {
-                handle_missing_search_expression();
-            } else {
-                read_files(&args, process_line_search);
-            }
+            execute_on_expression(&args,
+                                  handle_missing_search_expression,
+                                  process_line_search);
         }
         Mode::LineRegexSearch => {
-            if search_expression.is_none() {
-                handle_missing_search_expression();
-            } else {
-                read_files(&args, process_regex_search);
-            }
+            execute_on_expression(&args,
+                                  handle_missing_search_expression,
+                                  process_regex_search);
+        }
+        Mode::ZipRegex => {
+            execute_on_expression(&args,
+                                  handle_missing_search_expression,
+                                  process_zip_with_regex);
         }
     }
 }
