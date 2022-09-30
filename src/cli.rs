@@ -10,6 +10,13 @@ pub(crate) enum Mode {
     ZipRegex
 }
 
+#[derive(ArgEnum, Debug, Clone)]
+#[clap(rename_all = "kebab_case")]
+pub(crate) enum Output {
+    Console,
+    File
+}
+
 /// Simple binary programme used to grep files by name, or for searching inside of compressed files.
 #[derive(Parser)]
 pub(crate) struct Cli {
@@ -23,5 +30,13 @@ pub(crate) struct Cli {
 
     /// The operation mode
     #[clap(short, long, arg_enum)]
-    pub(crate) mode: Mode
+    pub(crate) mode: Mode,
+
+    /// The output mode
+    #[clap(short, long, arg_enum)]
+    pub(crate) output: Option<Output>,
+
+    /// The output file in case the output parameter is "File"
+    #[clap(short, long)]
+    pub(crate) file: Option<String>,
 }

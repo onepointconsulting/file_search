@@ -1,17 +1,20 @@
 extern crate glob;
+extern crate core;
 
 use fs::File;
 use std::{fs};
-use std::path::{PathBuf};
+use std::fs::OpenOptions;
+use std::ops::Deref;
+use std::path::{Path, PathBuf};
 use std::process;
 
 use clap::Parser;
 use colored::Colorize;
 use fancy_regex::Regex;
 
-use crate::cli::{Cli, Mode};
+use crate::cli::{Cli, Mode, Output};
 use crate::io_ops::read_lines;
-use crate::result_printer::{OutputPrinter, StdPrinter};
+use crate::result_printer::{FilePrinter, OutputPrinter, StdPrinter};
 
 use self::glob::glob;
 
@@ -171,32 +174,76 @@ fn main() {
     let args = Cli::parse();
     let search_expression = &args.search_expression;
     let mode = &args.mode;
-    let printer = StdPrinter {};
-    printer.output(format!("Mode is {}", format!("{:?}", mode).bold()).as_str());
+    let output_option: &Option<Output> = &args.output;
+    let file_option: &Option<String> = &args.file;
+    let mut printer: &dyn OutputPrinter = &StdPrinter {};
+    let file;
+    let file_printer;
+
+    match output_option {
+        Some(output) => {
+            match output {
+                Output::Console => {
+                    printer = &StdPrinter {}
+                }
+                Output::File => {
+                    match file_option {
+                        Some(f) => {
+                            let file_path = Path::new(f);
+                            let written_file_result = OpenOptions::new()
+                                .write(true)
+                                .create(true)
+                                .append(true)
+                                .open(&file_path);
+                            file = written_file_result.unwrap();
+                            file_printer = FilePrinter {
+                                path: &file_path,
+                                file: &file,
+                            };
+                            printer = &file_printer
+                        }
+                        None => {
+                            printer = &StdPrinter {}
+                        }
+                    }
+                }
+            }
+        }
+        None => {}
+    }
+
+    printer.output(format!("Mode is {}", format!("{:?}", mode)).as_str());
+
+    process_all_modes(&args, search_expression, mode, printer)
+}
+
+fn process_all_modes(args: &Cli,
+                     search_expression: &Option<String>,
+                     mode: &Mode, mut printer: &dyn OutputPrinter) {
     match mode {
         Mode::FileName => {
             read_files(&args,
-                       if search_expression.is_none() { process_path_simple } else { process_path_with_expression }, &printer);
+                       if search_expression.is_none() { process_path_simple } else { process_path_with_expression }, printer);
         }
         Mode::Zip => {
             execute_on_expression(&args,
                                   handle_missing_search_expression,
-                                  process_zip_with_expression, &printer);
+                                  process_zip_with_expression, printer);
         }
         Mode::LineSearch => {
             execute_on_expression(&args,
                                   handle_missing_search_expression,
-                                  process_line_search, &printer);
+                                  process_line_search, printer);
         }
         Mode::LineRegexSearch => {
             execute_on_expression(&args,
                                   handle_missing_search_expression,
-                                  process_regex_search, &printer);
+                                  process_regex_search, printer);
         }
         Mode::ZipRegex => {
             execute_on_expression(&args,
                                   handle_missing_search_expression,
-                                  process_zip_with_regex, &printer);
+                                  process_zip_with_regex, printer);
         }
     }
 }
