@@ -6,6 +6,7 @@ use std::path::{Path};
 pub(crate) trait OutputPrinter {
     fn output(&self, msg: &str);
     fn err_output(&self, msg: &str);
+    fn get_name(&self) -> &str;
 }
 
 pub(crate) struct StdPrinter {}
@@ -17,6 +18,10 @@ impl OutputPrinter for StdPrinter {
 
     fn err_output(&self, msg: &str) {
         eprintln!("{}", msg)
+    }
+
+    fn get_name(&self) -> &str {
+        return "StdPrinter"
     }
 }
 
@@ -41,6 +46,10 @@ impl OutputPrinter for FilePrinter<'_> {
 
     fn err_output(&self, msg: &str) {
         print_msg(self.file, self.path, msg, "error");
+    }
+
+    fn get_name(&self) -> &str {
+        return "FilePrinter"
     }
 }
 

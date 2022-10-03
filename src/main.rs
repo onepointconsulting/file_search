@@ -3,8 +3,8 @@ extern crate core;
 
 use fs::File;
 use std::{fs};
+use std::collections::HashMap;
 use std::fs::OpenOptions;
-use std::ops::Deref;
 use std::path::{Path, PathBuf};
 use std::process;
 
@@ -13,7 +13,7 @@ use colored::Colorize;
 use fancy_regex::Regex;
 
 use crate::cli::{Cli, Mode, Output};
-use crate::io_ops::read_lines;
+use crate::io_ops::{LINE_ENDING, read_lines};
 use crate::result_printer::{FilePrinter, OutputPrinter, StdPrinter};
 
 use self::glob::glob;
@@ -141,7 +141,11 @@ fn process_line_search_generic<T>(path: PathBuf, search_expression_option: &Opti
             for (linenumber, line) in lines.enumerate() {
                 if let Ok(s) = line {
                     if search_fn(&s, search_filter) {
-                        output.output(format!("{} :: {} :: {}", format!("{}", main_file_path).bold(), linenumber, s.trim()).as_str());
+                        let mut content = format!("{}", main_file_path);
+                        if output.get_name().eq("StdPrinter") {
+                            content = content.bold().parse().unwrap();
+                        }
+                        output.output(format!("{} :: {} :: {}", content, linenumber, s.trim()).as_str());
                     }
                 }
             }
@@ -212,14 +216,26 @@ fn main() {
         None => {}
     }
 
-    printer.output(format!("Mode is {}", format!("{:?}", mode)).as_str());
+    print_cmd_options(&args, printer);
 
     process_all_modes(&args, search_expression, mode, printer)
 }
 
+fn print_cmd_options(args: &Cli, printer: &dyn OutputPrinter) {
+    let mut print_map = HashMap::new();
+    print_map.insert("Mode".to_string(),format!("{:?}", args.mode));
+    print_map.insert("Glob".to_string(),format!("{:?}", args.glob_pattern));
+    for (key, value) in &print_map {
+        printer.output(format!("{} is {}", key, value).as_str());
+    }
+    if printer.get_name().eq("FilePrinter") {
+        printer.output(LINE_ENDING)
+    }
+}
+
 fn process_all_modes(args: &Cli,
                      search_expression: &Option<String>,
-                     mode: &Mode, mut printer: &dyn OutputPrinter) {
+                     mode: &Mode, printer: &dyn OutputPrinter) {
     match mode {
         Mode::FileName => {
             read_files(&args,
