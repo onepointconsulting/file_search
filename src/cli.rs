@@ -7,7 +7,8 @@ pub(crate) enum Mode {
     Zip,
     LineSearch,
     LineRegexSearch,
-    ZipRegex
+    ZipRegex,
+    JsonPath
 }
 
 #[derive(ArgEnum, Debug, Clone)]
@@ -17,14 +18,17 @@ pub(crate) enum Output {
     File
 }
 
-/// Simple binary programme used to grep files by name, or for searching inside of compressed files.
+/**
+Simple binary programme used to grep files by name, or for searching inside of compressed files.
+JSON path is also supported when using json-path mode.
+*/
 #[derive(Parser)]
 pub(crate) struct Cli {
     /// The glob pattern used to list files, e.g. *.zip or /media/**/*.csv.
     #[clap(short, long)]
     pub(crate) glob_pattern: String,
 
-    /// The search expression, like 'foo'. Not a regular expression unless you use "line-search-regex"
+    /// The search expression, like 'foo' or if using json path e.g. '$..name'. Not a regular expression unless you should use "line-search-regex"
     #[clap(short, long)]
     pub(crate) search_expression: Option<String>,
 

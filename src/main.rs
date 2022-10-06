@@ -14,6 +14,7 @@ use fancy_regex::Regex;
 
 use crate::cli::{Cli, Mode, Output};
 use crate::io_ops::{LINE_ENDING, read_lines};
+use crate::json_path_search::process_file_with_json_path;
 use crate::result_printer::{FilePrinter, OutputPrinter, StdPrinter};
 
 use self::glob::glob;
@@ -21,6 +22,7 @@ use self::glob::glob;
 mod cli;
 mod io_ops;
 mod result_printer;
+mod json_path_search;
 
 fn read_files(cli: &Cli, process_fn: fn(PathBuf, &Option<String>, output: &dyn OutputPrinter) -> (), output: &dyn OutputPrinter) {
     let glob_pattern = &cli.glob_pattern;
@@ -223,8 +225,13 @@ fn main() {
 
 fn print_cmd_options(args: &Cli, printer: &dyn OutputPrinter) {
     let mut print_map = HashMap::new();
-    print_map.insert("Mode".to_string(),format!("{:?}", args.mode));
-    print_map.insert("Glob".to_string(),format!("{:?}", args.glob_pattern));
+    print_map.insert("Mode  ".to_string(),format!("{:?}", args.mode));
+    print_map.insert("Glob  ".to_string(),format!("{:?}", args.glob_pattern));
+    print_map.insert("Search".to_string(),format!("{:?}", args.search_expression));
+    if args.file.is_some() {
+        print_map.insert("File  ".to_string(),format!("{:?}", args.file));
+    }
+
     for (key, value) in &print_map {
         printer.output(format!("{} is {}", key, value).as_str());
     }
@@ -260,6 +267,11 @@ fn process_all_modes(args: &Cli,
             execute_on_expression(&args,
                                   handle_missing_search_expression,
                                   process_zip_with_regex, printer);
+        }
+        Mode::JsonPath => {
+            execute_on_expression(&args,
+                                  handle_missing_search_expression,
+                                  process_file_with_json_path, printer);
         }
     }
 }

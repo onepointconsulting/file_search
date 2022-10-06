@@ -1,0 +1,75 @@
+{
+  "newCustomer": {
+    "customerId": {
+      "masterKey": {
+        "systemOwner": "DE",
+        "system": "TOR",
+        "id": "AAA7069380"
+      },
+      "sourceKeys": {
+        "keies": [
+          {
+            "systemOwner": "DE",
+            "system": "TOR",
+            "id": "AAA7069380"
+          }
+        ]
+      }
+    },
+    "owner": {
+      "key": {
+        "systemOwner": "BLABLABLA",
+        "system": "TOR",
+        "id": "NL"
+      }
+    },
+    "firstName": "Joe",
+    "lastName": "Blogs",
+    "initials": "H",
+    "extraNames": {
+      "extraNames": [
+        {
+          "nameType": "Passport Last Name",
+          "name": "Joe"
+        },
+        {
+          "nameType": "Passport First Name",
+          "name": "Blogs"
+        },
+        {
+          "nameType": "Passport First Name",
+          "name": 1
+        }
+      ]
+    },
+    "gender": "Male",
+    "genderTitle": "Sir",
+    "dateOfBirth": -559353600000,
+    "legalEntityId": "NL",
+    "contactPoints": {
+      "contactPoints": []
+    },
+    "preferences": {
+      "preferences": [
+        {
+          "type": "LAN",
+          "value": "NL"
+        }
+      ]
+    },
+    "status": "Obsolete",
+    "version": 1,
+    "customerLevel": "Silver"
+  },
+  "customerMatchCandidates": [],
+  "invalidPaths": {},
+  "masterStewardshipDataList": [],
+  "initialDrop": true,
+  "update": false,
+  "manualReview": false,
+  "emit": true,
+  "beenInQAStewardship": false,
+  "beenInMatchStewardship": false,
+  "partialUpdate": false,
+  "forceMerge": false
+}
