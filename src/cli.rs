@@ -8,7 +8,8 @@ pub(crate) enum Mode {
     LineSearch,
     LineRegexSearch,
     ZipRegex,
-    JsonPath
+    JsonPath,
+    PdfSearch
 }
 
 #[derive(ArgEnum, Debug, Clone)]

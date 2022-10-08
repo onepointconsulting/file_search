@@ -13,8 +13,10 @@ use colored::Colorize;
 use fancy_regex::Regex;
 
 use crate::cli::{Cli, Mode, Output};
+use crate::finders::find_simple;
 use crate::io_ops::{LINE_ENDING, read_lines};
 use crate::json_path_search::process_file_with_json_path;
+use crate::pdf_search::process_pdf_simple_search;
 use crate::result_printer::{FilePrinter, OutputPrinter, Statistics, StdPrinter};
 
 use self::glob::glob;
@@ -23,6 +25,8 @@ mod cli;
 mod io_ops;
 mod result_printer;
 mod json_path_search;
+mod pdf_search;
+mod finders;
 
 fn read_files(cli: &Cli, process_fn: fn(PathBuf, &Option<String>, output: &mut dyn OutputPrinter) -> (), output: &mut dyn OutputPrinter) {
     let glob_pattern = &cli.glob_pattern;
@@ -47,10 +51,6 @@ fn process_path_simple(path: PathBuf, _: &Option<String>, output: &mut dyn Outpu
             output.err_output("Nothing to print")
         }
     }
-}
-
-fn find_simple(content: &str, search_filter: &String) -> bool {
-    content.find(search_filter).is_some()
 }
 
 fn find_regex(content: &str, search_filter: &Regex) -> bool {
@@ -274,6 +274,11 @@ fn process_all_modes(args: &Cli,
             execute_on_expression(&args,
                                   handle_missing_search_expression,
                                   process_file_with_json_path, printer);
+        }
+        Mode::PdfSearch => {
+            execute_on_expression(&args,
+                                  handle_missing_search_expression,
+                                  process_pdf_simple_search, printer);
         }
     }
 }
