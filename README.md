@@ -35,7 +35,19 @@ OPTIONS:
 
 ```
 
+### Build
+
+```ps1
+cargo build -r
+```
+
 ### Examples
+
+Searching just for json files recursively:
+
+```ps1
+file_search.exe -g \tmp\**\*.json --mode file-name
+```
 
 Searching for csv file names with the `tb_` substring:
 
@@ -43,3 +55,26 @@ Searching for csv file names with the `tb_` substring:
 file_search.exe -g data\*.csv --search-expression tb_ --mode file-name
 ```
 
+Searching recursively for json files and searching in those files for a specific JSON path:
+
+```ps1
+file_search.exe -g \tmp\**\*.json -m json-path -s "$.newCustomer.customerId.masterKey.systemOwner"
+```
+
+Searching in jar files using recursion for certain classes:
+
+```ps1
+file_search.exe -g C:\Users\gilfe\.m2\repository\**\*.jar --search-expression org/glassfish/jersey/client/internal/LocalizationMessages --mode zip
+```
+
+Searching in csv files for a simple pattern:
+
+```ps1
+file_search.exe -g data\*.csv --search-expression tb_ --mode line-search
+```
+
+Searching in csv files for a regular expression and then piping the output to a file:
+
+```ps1
+file_search.exe -g data\*.csv --search-expression "\b[jJ]im\b" --mode line-regex-search --output file --file /tmp/search_line_res.txt
+```

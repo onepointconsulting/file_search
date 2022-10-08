@@ -15,7 +15,7 @@ use fancy_regex::Regex;
 use crate::cli::{Cli, Mode, Output};
 use crate::io_ops::{LINE_ENDING, read_lines};
 use crate::json_path_search::process_file_with_json_path;
-use crate::result_printer::{FilePrinter, OutputPrinter, StdPrinter};
+use crate::result_printer::{FilePrinter, OutputPrinter, Statistics, StdPrinter};
 
 use self::glob::glob;
 
@@ -24,7 +24,7 @@ mod io_ops;
 mod result_printer;
 mod json_path_search;
 
-fn read_files(cli: &Cli, process_fn: fn(PathBuf, &Option<String>, output: &dyn OutputPrinter) -> (), output: &dyn OutputPrinter) {
+fn read_files(cli: &Cli, process_fn: fn(PathBuf, &Option<String>, output: &mut dyn OutputPrinter) -> (), output: &mut dyn OutputPrinter) {
     let glob_pattern = &cli.glob_pattern;
     let search_expression = &cli.search_expression;
     let expected = format!("Failed to read glob pattern {}", glob_pattern);
@@ -38,10 +38,10 @@ fn read_files(cli: &Cli, process_fn: fn(PathBuf, &Option<String>, output: &dyn O
     }
 }
 
-fn process_path_simple(path: PathBuf, _: &Option<String>, output: &dyn OutputPrinter) {
+fn process_path_simple(path: PathBuf, _: &Option<String>, output: &mut dyn OutputPrinter) {
     match path.to_str() {
         Some(s) => {
-            output.output(s);
+            output.output_with_stats(s);
         }
         None => {
             output.err_output("Nothing to print")
@@ -69,13 +69,13 @@ fn find_regex(content: &str, search_filter: &Regex) -> bool {
 }
 
 fn process_path_with_expression(path: PathBuf, search_expression_option: &Option<String>,
-                                output: &dyn OutputPrinter) {
+                                output: &mut dyn OutputPrinter) {
     match path.to_str() {
         Some(s) => {
             match search_expression_option {
                 Some(search_filter) => {
                     if find_simple(s, search_filter) {
-                        output.output(s);
+                        output.output_with_stats(s);
                     }
                 }
                 _ => ()
@@ -87,11 +87,11 @@ fn process_path_with_expression(path: PathBuf, search_expression_option: &Option
     }
 }
 
-fn process_zip_with_expression(path: PathBuf, search_expression_option: &Option<String>, output: &dyn OutputPrinter) {
+fn process_zip_with_expression(path: PathBuf, search_expression_option: &Option<String>, output: &mut dyn OutputPrinter) {
     process_zip_with_expression_generic(path, search_expression_option, find_simple, output);
 }
 
-fn process_zip_with_regex(path: PathBuf, search_expression_option: &Option<String>, output: &dyn OutputPrinter) {
+fn process_zip_with_regex(path: PathBuf, search_expression_option: &Option<String>, output: &mut dyn OutputPrinter) {
     match search_expression_option {
         Some(search_expression) => {
             let re = Regex::new(search_expression).expect("Invalid regex");
@@ -104,7 +104,7 @@ fn process_zip_with_regex(path: PathBuf, search_expression_option: &Option<Strin
 
 fn process_zip_with_expression_generic<T>(path: PathBuf, search_expression_option: &Option<T>,
                                           find_func: fn(content: &str, search_filter: &T) -> bool,
-                                          output: &dyn OutputPrinter) {
+                                          output: &mut dyn OutputPrinter) {
     let main_file_path = &path.to_str().unwrap();
     let zip_file = File::open(&path).unwrap();
     let mut archive = zip::ZipArchive::new(&zip_file).unwrap();
@@ -114,16 +114,16 @@ fn process_zip_with_expression_generic<T>(path: PathBuf, search_expression_optio
         let file = archive.by_index(i).unwrap();
         let file_name = file.name();
         if find_func(file_name, search_filter) {
-            output.output(format!("{} :: {}", main_file_path, file_name).as_str());
+            output.output_with_stats(format!("{} :: {}", main_file_path, file_name).as_str());
         }
     }
 }
 
-fn process_line_search(path: PathBuf, search_expression_option: &Option<String>, output: &dyn OutputPrinter) {
+fn process_line_search(path: PathBuf, search_expression_option: &Option<String>, output: &mut dyn OutputPrinter) {
     process_line_search_generic(path, search_expression_option, find_simple, output);
 }
 
-fn process_regex_search(path: PathBuf, search_expression_option: &Option<String>, output: &dyn OutputPrinter) {
+fn process_regex_search(path: PathBuf, search_expression_option: &Option<String>, output: &mut dyn OutputPrinter) {
     match search_expression_option {
         Some(search_expression) => {
             let re = Regex::new(search_expression).expect("Invalid regex");
@@ -135,7 +135,7 @@ fn process_regex_search(path: PathBuf, search_expression_option: &Option<String>
 
 fn process_line_search_generic<T>(path: PathBuf, search_expression_option: &Option<T>,
                                   search_fn: fn(&str, &T) -> bool,
-                                  output: &dyn OutputPrinter) {
+                                  output: &mut dyn OutputPrinter) {
     let main_file_path = &path.to_str().unwrap();
     let search_filter = search_expression_option.as_ref().unwrap();
     match read_lines(&path) {
@@ -147,7 +147,7 @@ fn process_line_search_generic<T>(path: PathBuf, search_expression_option: &Opti
                         if output.get_name().eq("StdPrinter") {
                             content = content.bold().parse().unwrap();
                         }
-                        output.output(format!("{} :: {} :: {}", content, linenumber, s.trim()).as_str());
+                        output.output_with_stats(format!("{} :: {} :: {}", content, linenumber, s.trim()).as_str());
                     }
                 }
             }
@@ -165,8 +165,8 @@ fn handle_missing_search_expression() {
 
 fn execute_on_expression(
     args: &Cli, missing_func: fn() -> (),
-    process_fn: fn(PathBuf, &Option<String>, output: &dyn OutputPrinter),
-    output: &dyn OutputPrinter,
+    process_fn: fn(PathBuf, &Option<String>, output: &mut dyn OutputPrinter),
+    output: &mut dyn OutputPrinter,
 ) {
     let search_expression = &args.search_expression;
     if search_expression.is_none() {
@@ -182,15 +182,16 @@ fn main() {
     let mode = &args.mode;
     let output_option: &Option<Output> = &args.output;
     let file_option: &Option<String> = &args.file;
-    let mut printer: &dyn OutputPrinter = &StdPrinter {};
+    let mut printer: &mut dyn OutputPrinter = &mut StdPrinter { statistics: Statistics { hits: 0, errors: 0 } };
+    let mut file_printer_obj;
     let file;
-    let file_printer;
+    let mut std_printer = StdPrinter { statistics: Statistics { hits: 0, errors: 0 } };
 
     match output_option {
         Some(output) => {
             match output {
                 Output::Console => {
-                    printer = &StdPrinter {}
+                    printer = &mut std_printer
                 }
                 Output::File => {
                     match file_option {
@@ -202,14 +203,15 @@ fn main() {
                                 .append(true)
                                 .open(&file_path);
                             file = written_file_result.unwrap();
-                            file_printer = FilePrinter {
+                            file_printer_obj = FilePrinter {
+                                statistics: Statistics { hits: 0, errors: 0 },
                                 path: &file_path,
                                 file: &file,
                             };
-                            printer = &file_printer
+                            printer = &mut file_printer_obj;
                         }
                         None => {
-                            printer = &StdPrinter {}
+                            printer = &mut std_printer
                         }
                     }
                 }
@@ -219,17 +221,17 @@ fn main() {
     }
 
     print_cmd_options(&args, printer);
-
-    process_all_modes(&args, search_expression, mode, printer)
+    process_all_modes(&args, search_expression, mode, printer);
+    printer.print_stats();
 }
 
-fn print_cmd_options(args: &Cli, printer: &dyn OutputPrinter) {
+fn print_cmd_options(args: &Cli, printer: &mut dyn OutputPrinter) {
     let mut print_map = HashMap::new();
-    print_map.insert("Mode  ".to_string(),format!("{:?}", args.mode));
-    print_map.insert("Glob  ".to_string(),format!("{:?}", args.glob_pattern));
-    print_map.insert("Search".to_string(),format!("{:?}", args.search_expression));
+    print_map.insert("Mode  ".to_string(), format!("{:?}", args.mode));
+    print_map.insert("Glob  ".to_string(), format!("{:?}", args.glob_pattern));
+    print_map.insert("Search".to_string(), format!("{:?}", args.search_expression));
     if args.file.is_some() {
-        print_map.insert("File  ".to_string(),format!("{:?}", args.file));
+        print_map.insert("File  ".to_string(), format!("{:?}", args.file));
     }
 
     for (key, value) in &print_map {
@@ -242,7 +244,7 @@ fn print_cmd_options(args: &Cli, printer: &dyn OutputPrinter) {
 
 fn process_all_modes(args: &Cli,
                      search_expression: &Option<String>,
-                     mode: &Mode, printer: &dyn OutputPrinter) {
+                     mode: &Mode, printer: &mut dyn OutputPrinter) {
     match mode {
         Mode::FileName => {
             read_files(&args,

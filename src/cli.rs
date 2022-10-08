@@ -20,7 +20,7 @@ pub(crate) enum Output {
 
 /**
 Simple binary programme used to grep files by name, or for searching inside of compressed files.
-JSON path is also supported when using json-path mode.
+JSON path is also supported when using json-path mode. If using json path, it should be a valid json path expression.
 */
 #[derive(Parser)]
 pub(crate) struct Cli {
