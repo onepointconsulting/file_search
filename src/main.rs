@@ -14,6 +14,7 @@ use fancy_regex::Regex;
 
 use crate::cli::{Cli, Mode, Output};
 use crate::finders::find_simple;
+use crate::html_printer::HtmlPrinter;
 use crate::io_ops::{LINE_ENDING, read_lines};
 use crate::json_path_search::process_file_with_json_path;
 use crate::pdf_search::process_pdf_simple_search;
@@ -27,6 +28,7 @@ mod result_printer;
 mod json_path_search;
 mod pdf_search;
 mod finders;
+mod html_printer;
 
 fn read_files(cli: &Cli, process_fn: fn(PathBuf, &Option<String>, output: &mut dyn OutputPrinter) -> (), output: &mut dyn OutputPrinter) {
     let glob_pattern = &cli.glob_pattern;
@@ -176,16 +178,20 @@ fn execute_on_expression(
     }
 }
 
+
+
 fn main() {
     let args = Cli::parse();
     let search_expression = &args.search_expression;
     let mode = &args.mode;
     let output_option: &Option<Output> = &args.output;
     let file_option: &Option<String> = &args.file;
-    let mut printer: &mut dyn OutputPrinter = &mut StdPrinter { statistics: Statistics { hits: 0, errors: 0 } };
+    let statistics = Statistics { hits: 0, errors: 0 };
+    let mut printer: &mut dyn OutputPrinter = &mut StdPrinter { statistics };
     let mut file_printer_obj;
+    let mut html_printer_obj;
     let file;
-    let mut std_printer = StdPrinter { statistics: Statistics { hits: 0, errors: 0 } };
+    let mut std_printer = StdPrinter { statistics };
 
     match output_option {
         Some(output) => {
@@ -196,21 +202,37 @@ fn main() {
                 Output::File => {
                     match file_option {
                         Some(f) => {
-                            let file_path = Path::new(f);
-                            let written_file_result = OpenOptions::new()
-                                .write(true)
-                                .create(true)
-                                .append(true)
-                                .open(&file_path);
+                            let file_path = create_file(f);
+                            let written_file_result = prepare_file(&file_path);
                             file = written_file_result.unwrap();
                             file_printer_obj = FilePrinter {
-                                statistics: Statistics { hits: 0, errors: 0 },
+                                statistics,
                                 path: &file_path,
                                 file: &file,
                             };
                             printer = &mut file_printer_obj;
                         }
                         None => {
+                            // The user probably forgot about the file
+                            printer = &mut std_printer
+                        }
+                    }
+                }
+                Output::HTML => {
+                    match file_option {
+                        Some(f) => {
+                            let file_path = create_file(f);
+                            let written_file_result = prepare_file(&file_path);
+                            file = written_file_result.unwrap();
+                            html_printer_obj = HtmlPrinter {
+                                statistics,
+                                path: &file_path,
+                                file: &file,
+                            };
+                            printer = &mut html_printer_obj;
+                        }
+                        None => {
+                            // The user probably forgot about the file
                             printer = &mut std_printer
                         }
                     }
@@ -225,21 +247,32 @@ fn main() {
     printer.print_stats();
 }
 
+fn prepare_file(file_path: &&Path) -> std::io::Result<File> {
+    OpenOptions::new()
+        .write(true)
+        .create(true)
+        .append(true)
+        .open(&file_path)
+}
+
+fn create_file(f: &String) -> &Path {
+    let file_path = Path::new(f);
+    if file_path.exists() {
+        fs::remove_file(file_path).expect(
+            format!("Could not remove {}.", file_path.display().to_string()).as_str());
+    }
+    file_path
+}
+
 fn print_cmd_options(args: &Cli, printer: &mut dyn OutputPrinter) {
     let mut print_map = HashMap::new();
-    print_map.insert("Mode  ".to_string(), format!("{:?}", args.mode));
-    print_map.insert("Glob  ".to_string(), format!("{:?}", args.glob_pattern));
+    print_map.insert("Mode".to_string(), format!("{:?}", args.mode));
+    print_map.insert("Glob".to_string(), format!("{:?}", args.glob_pattern));
     print_map.insert("Search".to_string(), format!("{:?}", args.search_expression));
     if args.file.is_some() {
-        print_map.insert("File  ".to_string(), format!("{:?}", args.file));
+        print_map.insert("File".to_string(), format!("{:?}", args.file));
     }
-
-    for (key, value) in &print_map {
-        printer.output(format!("{} is {}", key, value).as_str());
-    }
-    if printer.get_name().eq("FilePrinter") {
-        printer.output(LINE_ENDING)
-    }
+    printer.print_param_map(print_map);
 }
 
 fn process_all_modes(args: &Cli,

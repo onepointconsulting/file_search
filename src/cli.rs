@@ -16,7 +16,8 @@ pub(crate) enum Mode {
 #[clap(rename_all = "kebab_case")]
 pub(crate) enum Output {
     Console,
-    File
+    File,
+    HTML
 }
 
 /**
