@@ -25,10 +25,10 @@ pub(crate) struct StdPrinter {
 }
 
 impl Statistics {
-    fn increase_hits(&mut self) {
+    pub(crate) fn increase_hits(&mut self) {
         self.hits += 1;
     }
-    fn increase_errors(&mut self) {
+    pub(crate) fn increase_errors(&mut self) {
         self.hits += 1;
     }
 }

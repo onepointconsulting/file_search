@@ -268,9 +268,11 @@ fn print_cmd_options(args: &Cli, printer: &mut dyn OutputPrinter) {
     let mut print_map = HashMap::new();
     print_map.insert("Mode".to_string(), format!("{:?}", args.mode));
     print_map.insert("Glob".to_string(), format!("{:?}", args.glob_pattern));
-    print_map.insert("Search".to_string(), format!("{:?}", args.search_expression));
+    if args.search_expression.is_some() {
+        print_map.insert("Search".to_string(), format!("{:?}", args.search_expression.clone().unwrap()));
+    }
     if args.file.is_some() {
-        print_map.insert("File".to_string(), format!("{:?}", args.file));
+        print_map.insert("File".to_string(), format!("{:?}", args.file.clone().unwrap()));
     }
     printer.print_param_map(print_map);
 }
