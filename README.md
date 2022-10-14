@@ -5,9 +5,10 @@ Simple binary programme used to grep files by name, or for searching inside of c
 ### Usage Instructions
 
 ```
-file_search
+file_search 
 Simple binary programme used to grep files by name, or for searching inside of compressed files.
-JSON path is also supported when using json-path mode
+JSON path is also supported when using json-path mode. If using json path, it should be a valid json
+path expression
 
 USAGE:
     file_search.exe [OPTIONS] --glob-pattern <GLOB_PATTERN> --mode <MODE>
@@ -24,10 +25,10 @@ OPTIONS:
 
     -m, --mode <MODE>
             The operation mode [possible values: file-name, zip, line-search, line-regex-search,
-            zip-regex, json-path]
+            zip-regex, json-path, pdf-search]
 
     -o, --output <OUTPUT>
-            The output mode [possible values: console, file]
+            The output mode [possible values: console, file, html]
 
     -s, --search-expression <SEARCH_EXPRESSION>
             The search expression, like 'foo' or if using json path e.g. '$..name'. Not a regular
@@ -77,4 +78,10 @@ Searching in csv files for a regular expression and then piping the output to a 
 
 ```ps1
 file_search.exe -g data\*.csv --search-expression "\b[jJ]im\b" --mode line-regex-search --output file --file /tmp/search_line_res.txt
+```
+
+Search file using a regular expression and outputting the results to an HTML file:
+
+```ps1
+file_search.exe -g data\*.csv --search-expression "\b[jJ]im\b" --mode line-regex-search --output html --file /tmp/search_line_res.html
 ```
