@@ -8,14 +8,14 @@ Simple binary programme used to grep files by name, or for searching inside of c
 file_search 
 Simple binary programme used to grep files by name, or for searching inside of compressed files.
 JSON path is also supported when using json-path mode. If using json path, it should be a valid json
-path expression
+path expression.
 
 USAGE:
     file_search.exe [OPTIONS] --glob-pattern <GLOB_PATTERN> --mode <MODE>
 
 OPTIONS:
     -f, --file <FILE>
-            The output file in case the output parameter is "File"
+            The output file in case the output parameter is "file". See the "output" parameter
 
     -g, --glob-pattern <GLOB_PATTERN>
             The glob pattern used to list files, e.g. *.zip or /media/**/*.csv
@@ -24,19 +24,24 @@ OPTIONS:
             Print help information
 
     -m, --mode <MODE>
-            The operation mode [possible values: file-name, zip, line-search, line-regex-search,
-            zip-regex, json-path, pdf-search]
+            The operation mode
+
+            [possible values: file-name, zip, line-search, line-regex-search, zip-regex, json-path,
+            pdf-search]
 
     -o, --output <OUTPUT>
-            The output mode [possible values: console, file, html]
+            The output mode
+
+            [possible values: console, file, html]
 
     -s, --search-expression <SEARCH_EXPRESSION>
             The search expression, like 'foo' or if using json path e.g. '$..name'. Not a regular
             expression unless you should use "line-search-regex"
-
 ```
 
 ### Build
+
+Release build
 
 ```ps1
 cargo build -r
@@ -68,7 +73,7 @@ Searching recursively for json files and searching in those files for a specific
 file_search.exe -g \tmp\**\*.json -m json-path -s "$.newCustomer.customerId.masterKey.systemOwner"
 ```
 
-Searching in jar files using recursion for certain classes:
+Searching in jar files using recursion for certain Java classes:
 
 ```ps1
 file_search.exe -g C:\Users\gilfe\.m2\repository\**\*.jar --search-expression org/glassfish/jersey/client/internal/LocalizationMessages --mode zip
@@ -91,3 +96,7 @@ Search file using a regular expression and outputting the results to an HTML fil
 ```ps1
 file_search.exe -g data\*.csv --search-expression "\b[jJ]im\b" --mode line-regex-search --output html --file /tmp/search_line_res.html
 ```
+
+### More examples
+
+You can find more examples in the "examples" folder of this project.

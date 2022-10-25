@@ -42,7 +42,7 @@ pub(crate) struct Cli {
     #[clap(short, long, arg_enum)]
     pub(crate) output: Option<Output>,
 
-    /// The output file in case the output parameter is "File"
+    /// The output file in case the output parameter is "file". See the "output" parameter.
     #[clap(short, long)]
     pub(crate) file: Option<String>,
 }
