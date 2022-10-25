@@ -109,14 +109,21 @@ fn process_zip_with_expression_generic<T>(path: PathBuf, search_expression_optio
                                           output: &mut dyn OutputPrinter) {
     let main_file_path = &path.to_str().unwrap();
     let zip_file = File::open(&path).unwrap();
-    let mut archive = zip::ZipArchive::new(&zip_file).unwrap();
-    let len = &archive.len();
-    let search_filter = search_expression_option.as_ref().unwrap();
-    for i in 0..*len {
-        let file = archive.by_index(i).unwrap();
-        let file_name = file.name();
-        if find_func(file_name, search_filter) {
-            output.output_with_stats(format!("{} :: {}", main_file_path, file_name).as_str());
+    let zip_result = zip::ZipArchive::new(&zip_file);
+    match zip_result {
+        Ok(mut archive) => {
+            let len = &archive.len();
+            let search_filter = search_expression_option.as_ref().unwrap();
+            for i in 0..*len {
+                let file = archive.by_index(i).unwrap();
+                let file_name = file.name();
+                if find_func(file_name, search_filter) {
+                    output.output_with_stats(format!("{} :: {}", main_file_path, file_name).as_str());
+                }
+            }
+        }
+        Err(e) => {
+            output.err_output(format!("{:?}", e).as_str())
         }
     }
 }
