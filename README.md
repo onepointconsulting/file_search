@@ -56,6 +56,12 @@ Searching for csv file names with the `tb_` substring:
 file_search.exe -g data\*.csv --search-expression tb_ --mode file-name
 ```
 
+Searching recursively for all files with the name `build.xml`
+
+```ps1
+file_search.exe -g C:\development\onepoint\tui\**\*.xml -s build.xml --mode file-name
+```
+
 Searching recursively for json files and searching in those files for a specific JSON path:
 
 ```ps1

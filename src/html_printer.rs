@@ -14,6 +14,10 @@ impl HtmlPrinter<'_> {
     fn print_to_file(&mut self, msg: &str, what: &str) {
         print_msg(self.file, self.path, msg, what);
     }
+
+    fn start_row() -> String {
+        "<tr>".to_string()
+    }
 }
 
 macro_rules! td_format {() => ("<tr><td>{}</td><td>{}</td></tr>")}
@@ -46,6 +50,16 @@ impl OutputPrinter for HtmlPrinter<'_> {
         body {{
             font-family: Arial, Helvetica, sans-serif
         }}
+        table, th, td {{
+            border: 1px solid white;
+            border-collapse: collapse;
+        }}
+        th, td {{
+            background-color: #efefef;
+        }}
+        th, td {{
+            padding: 3px 10px
+        }}
     </style>
 </head>
 <body>
@@ -73,27 +87,29 @@ impl OutputPrinter for HtmlPrinter<'_> {
     }
 
     fn output_with_stats(&mut self, msg: &str) {
-        let splits = msg.split("::");
-        let mut acc = "<tr>".to_string();
-        for s in splits {
-            acc += format!(simple_td_format!(), s).as_str()
-        }
-        acc += "</tr>";
-        let table_row = format!(simple_td_format!(), acc);
-        self.print_to_file(table_row.as_str(), "message");
+        self.output(msg);
         self.statistics.increase_hits();
     }
 
     fn output(&mut self, msg: &str) {
-
+        let splits = msg.split("::");
+        let mut acc = Self::start_row();
+        for s in splits {
+            acc += format!(simple_td_format!(), s).as_str()
+        }
+        acc += "</tr>";
+        self.print_to_file(acc.as_str(), "message");
     }
 
     fn err_output(&mut self, msg: &str) {
+        let mut acc = Self::start_row();
+        acc += format!(simple_td_format!(), msg).as_str();
+        acc += "</tr>";
         self.statistics.increase_errors();
     }
 
     fn get_name(&self) -> &str {
-        "OutputPrinter"
+        "HtmlPrinter"
     }
 
     fn print_stats(&mut self) {
