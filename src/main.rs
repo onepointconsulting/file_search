@@ -123,7 +123,7 @@ fn process_zip_with_expression_generic<T>(path: PathBuf, search_expression_optio
             }
         }
         Err(e) => {
-            output.err_output(format!("{:?}", e).as_str())
+            output.err_output(format!("{} :: {:?}", main_file_path, e).as_str())
         }
     }
 }

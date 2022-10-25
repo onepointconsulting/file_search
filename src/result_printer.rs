@@ -29,7 +29,7 @@ impl Statistics {
         self.hits += 1;
     }
     pub(crate) fn increase_errors(&mut self) {
-        self.hits += 1;
+        self.errors += 1;
     }
 }
 
